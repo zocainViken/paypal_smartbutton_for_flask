@@ -1,12 +1,12 @@
 
  
 
-<h1 style="text-align: center;color: gold;"># paypal smartbutton for flask #</h1>
-<h2 style="text-align: center;color: gold;">a dirty way to integrate paypal smart button to you're Flask application</h2>
-<p style="text-align: center;">
+<h1 ># paypal smartbutton for flask #</h1>
+<h2 >a dirty way to integrate paypal smart button to you're Flask application</h2>
+<p >
     for this app you need to have some credential with paypal, for exercice and test of integration I recommended you to use you're sandbox account
 </p>
-<p style="text-align: center;">
+<p >
     So now we have our CLIENT_ID and our SUPER_SECRET_KEY, you will need to put you're client ID into templates/button/smartbutton.html, in the first script source you will see CLIENT_ID, replace it by you're own ID
 </p>
 <p style="text-align: center;">
