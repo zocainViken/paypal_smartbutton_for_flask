@@ -1,7 +1,39 @@
+from .models import OderProcessing
+from paypal import db
+
+def tax_calculator(tax, price):
+    # calculate %
+    # (2.9*150/100)  
+    #  ==> 
+    # tax x price / 100
+    money = float(price)
+    taxing = float(tax)# 2.9%
+    tax_amount = taxing * money / 100
+    total = money + tax_amount
+    return tax_amount, total
+
+def tax_reductor(tax, price):
+    # https://www.capte-les-maths.com/pourcentage/les_pourcentages_p10.php
+    
+    ##       Coefficient Multiplicateur = 1 +  20   = 1,2
+    ##                                        _____
+    ##                                         100
+    #____________________________________________________________
+    coeff_x = 1 + (tax / 100)#1.2
+    
+    
+    ##        Prix Initial = 180  = 150
+    ##                      ______
+    ##                        1,2
+    #____________________________________________________________
+    no_tax = price / coeff_x#  150
+    tax_amount = price - no_tax  #30
+    
+    return tax_amount, no_tax
 
 
 class shippingParser():
-    def __init__(self, data):
+    def __init__(self, data, debug=False):
         self.data = data
 
         # data send by js origin from smartbutton page
@@ -34,19 +66,20 @@ class shippingParser():
         self.method = data['links'][0]['method']#GET
 
         # calculate paypal fee
-        # (2.9*150/100)  ==> tax x price / 100
-        total = float(self.unit_amount)
-        payal_fee = 2.9# 2.9%
-        min_fee = 0.33# 0.33 --> EUR
-        formula = payal_fee * total / 100
-        self.fee = formula + min_fee#to paypal
-        self.net = total - self.fee#to me
-
+        # (2.9*150/100)  ==> (tax x price / 100) + transaction_price
+        price = float(self.unit_amount)
+        tax_paypal = 2.9# 2.9%
+        paypal_transaction_price = 0.33# 0.33 --> EUR
+        tva = 20
+        self.tva_amount, _ = tax_reductor(tva, price)# 30
+        tax_amount, total = tax_calculator(tax_paypal, price)#  paypal
         
+        self.for_paypal = tax_amount + paypal_transaction_price#to paypal 5.22 + 0.33 = 5.55
+        self.for_me = price - self.tva_amount - self.for_paypal# 180 - 30 - 5.55 = 144.5
 
-    def put_it_in_db(self, debug=False):
         if debug:
             print('\n\n\t\t DEBUG MODE:\n\n')
+            print('\n\n\t\t', self.data, ':\n\n\n\n')
             # customer data
             print(f'NAME:\t{self.payer_name}\t FIRSTNAME:\t{self.payer_first_name }\n FULLNAME:\t{self.full_name}\nPAYER_ID:\t{self.payer_id } \tMAIL:\t{self.payer_mail } ')
             print(f'\nORDER_ID:\t{self.order_id}\t ORDER_INTENT:\t{self.order_intent }\n ORDER_STATUS:\t{self.order_status}\n CREATE_TIME:\t{self.create_time } \tLAST_UPDATE:\t{self.update_time } ')
@@ -58,7 +91,29 @@ class shippingParser():
             print('REL:\t', self.rel)
             print('METHOD:\t', self.method)
 
+            print('TVA_AMOUNT:\t', self.tva_amount)
+            print('4 PAYPAL:\t', self.for_paypal)
+            print('4 ME:\t', self.for_me)
+
+
+
+        
+
+    def put_it_in_db(self):
         print('here the function for put my data into DB')
+        processing = OderProcessing(
+            order_id=self.order_id, order_intent=self.order_intent, order_status=self.order_status,
+            street=self.street, city_1=self.city_1, city_2=self.city_2, postal_code=self.postal_code,
+            country_code=self.country_code, unit_reference_id=self.unit_reference_id, unit_currency_code=self.unit_currency_code,
+            unit_amount=self.unit_amount, full_name=self.full_name, payer_first_name=self.payer_first_name,
+            payer_name=self.payer_name, payer_email=self.payer_mail, payer_id=self.payer_id, merchand_id=self.merchand_id,
+            links=self.link, rel=self.rel, method=self.method,  tva_amount=self.tva_amount, for_paypal=self.for_paypal, 
+            for_me=self.for_me, create_time=self.create_time, update_time=self.update_time,
+            )
+        
+        db.session.add(processing)
+        db.session.commit()
+        print('data correctly processed')
 
 
 '''if __name__ == '__main__':

@@ -12,7 +12,7 @@ def smartbutton():
 		return(str(e))
 from .process import shippingParser
 
-@app.route('/smart_button_ipn', methods=['POST', 'GET'])
+@app.route('/smart_button_ipn', methods=['POST'])
 def smartbuttonipn():
     # from here i receive a response from paypal after the payment was done
     # also I need to store this data into db 
